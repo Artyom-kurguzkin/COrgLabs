@@ -1,39 +1,35 @@
-case opcode is
+case Opcode is
     when "000" => -- A + B (Addition)
-        res := std_logic_vector( 
-            unsigned ( A ) + unsigned ( B ) + unsigned ( Cin & "000" )
-        );
-        -- Only the MSB carry-out is meaningful for 4-bit add
-        c_out_var ( 3 ) := (
-            ( unsigned ( A ) + unsigned ( B ) + unsigned ( Cin & "000" ) ) > 15
-        ) ? '1' : '0';
+        resultWithCarry := unsigned ( '0' & InputA ) + unsigned ( InputB ) + unsigned ( CarryIn );
+        Output          <= std_logic_vector ( resultWithCarry ( 3 downto 0 ) );
+        CarryOut        <= resultWithCarry ( 4 );
 
     when "001" => -- A - B (Subtraction)
-        res := std_logic_vector( 
-            unsigned ( A ) - unsigned ( B ) - unsigned ( Cin & "000" )
-        );
-        c_out_var ( 3 ) := (
-            ( unsigned ( A ) - unsigned ( B ) - unsigned ( Cin & "000" ) ) < 0
-        ) ? '1' : '0';
+        resultWithCarry := unsigned ( '0' & InputA ) - unsigned ( InputB ) - unsigned ( CarryIn );
+        Output          <= std_logic_vector ( resultWithCarry ( 3 downto 0 ) );
+        CarryOut        <= resultWithCarry ( 4 );
 
     when "010" => -- A AND B
-        res := A and B;
+        Output <= InputA and InputB;
 
     when "011" => -- A OR B
-        res := A or B;
+        Output <= InputA or InputB;
 
     when "100" => -- A XOR B
-        res := A xor B;
+        Output <= InputA xor InputB;
 
     when "101" => -- NOT A
-        res := not A;
+        Output <= not InputA;
 
     when "110" => -- A LBS (Left Bit Shift)
-        res := A ( 2 downto 0 ) & '0';
+        Output   <= InputA ( 2 downto 0 ) & '0';
+        CarryOut <= InputA ( 3 );
 
     when "111" => -- A++ (Increment)
-        res := std_logic_vector ( unsigned ( A ) + 1 );
+        resultWithCarry := unsigned ( '0' & InputA ) + 1;
+        Output          <= std_logic_vector ( resultWithCarry ( 3 downto 0 ) );
+        CarryOut        <= resultWithCarry ( 4 );
 
     when others =>
-        res := ( others => '0' );
+        Output <= ( others => '0' );
 end case;

@@ -1,68 +1,66 @@
+-- !NOTE, use 2008+ vhdl version. Set using TCL command:
+-- set_property file_type {VHDL 2008} [get_files -filter { file_type == VHDL }]
+
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL; 
 
 entity ALUBitSlice is
     Port ( 
-           opcode : in  STD_LOGIC_VECTOR ( 2 downto 0 ); 
-           A      : in  STD_LOGIC_VECTOR ( 3 downto 0 );
-           B      : in  STD_LOGIC_VECTOR ( 3 downto 0 );
-           Cin    : in  STD_LOGIC; -- carr
-           Output : out STD_LOGIC_VECTOR ( 3 downto 0 );
-           Cout   : out STD_LOGIC; -- carry out
+        Opcode    : in  STD_LOGIC_VECTOR ( 2 downto 0 );
+        InputA    : in  STD_LOGIC;
+        InputB    : in  STD_LOGIC;
+        CarryIn   : in  STD_LOGIC;
+        Output    : out STD_LOGIC;
+        CarryOut  : out STD_LOGIC
     );
 end ALUBitSlice;
 
 architecture Behavioral of ALUBitSlice is
 begin
-    process (opcode, A, B, Cin )
-        variable res       : std_logic_vector ( 3 downto 0 );
-        variable c_out_var : std_logic_vector ( 3 downto 0 );
+    process ( Opcode, InputA, InputB, CarryIn )
+        variable result : unsigned ( 1 downto 0 );
     begin
-        c_out_var := ( others => '0' );
+        Output   <= '0';
+        CarryOut <= '0';
+        result   := ( others => '0' );
 
-        case opcode is
+        case Opcode is
             when "000" => -- A + B (Addition)
-                res := std_logic_vector( 
-                    unsigned ( A ) + unsigned ( B ) + unsigned ( Cin & "000" )
-                );
-                -- Only the MSB carry-out is meaningful for 4-bit add
-                c_out_var ( 3 ) := (
-                    ( unsigned ( A ) + unsigned ( B ) + unsigned ( Cin & "000" ) ) > 15
-                ) ? '1' : '0';
+                result   := ( '0' & InputA ) + ( '0' & InputB ) + ( '0' & CarryIn );
+                Output   <= result ( 0 );
+                CarryOut <= result ( 1 );
 
             when "001" => -- A - B (Subtraction)
-                res := std_logic_vector( 
-                    unsigned ( A ) - unsigned ( B ) - unsigned ( Cin & "000" )
-                );
-                c_out_var ( 3 ) := (
-                    ( unsigned ( A ) - unsigned ( B ) - unsigned ( Cin & "000" ) ) < 0
-                ) ? '1' : '0';
+                -- Two's complement: A + NOT(B) + CarryIn
+                result   := ( '0' & InputA ) + ( '0' & (not InputB)) + ( '0' & CarryIn );
+                Output   <= result ( 0 );
+                CarryOut <= result ( 1 );
 
             when "010" => -- A AND B
-                res := A and B;
+                Output <= InputA and InputB;
 
             when "011" => -- A OR B
-                res := A or B;
+                Output <= InputA or InputB;
 
             when "100" => -- A XOR B
-                res := A xor B;
+                Output <= InputA xor InputB;
 
             when "101" => -- NOT A
-                res := not A;
+                Output <= not InputA;
 
-            when "110" => -- A LBS (Left Bit Shift)
-                res := A ( 2 downto 0 ) & '0';
+            when "110" => -- A LBS (Left Bit Shift) - shift is handled at ALU level
+                Output   <= InputA;
+                CarryOut <= InputB;
 
             when "111" => -- A++ (Increment)
-                res := std_logic_vector ( unsigned ( A ) + 1 );
+                result   := ( '0' & InputA ) + 1;
+                Output   <= result ( 0 );
+                CarryOut <= result ( 1 );
 
             when others =>
-                res := ( others => '0' );
+                Output <= '0';
         end case;
-
-        Output   <= res;
-        Cout     <= c_out_var ( 3 );
 
     end process;
 end Behavioral;
